@@ -1,0 +1,991 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Expenses">
+<meta name="theme-color" content="#0d0e1a">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="manifest" href="manifest.json">
+<title>Expense Manager</title>
+<style>
+:root{
+  --bg:#0d0e1a; --bg2:#151729; --card:rgba(255,255,255,.055); --card-b:rgba(255,255,255,.09);
+  --text:#f2f3fb; --muted:#979cb6; --faint:rgba(255,255,255,.08);
+  --accent:#7c5cff; --accent2:#22d3ee; --home:#34d399; --trip:#fb923c;
+  --good:#34d399; --warn:#fbbf24; --bad:#f87171;
+  --shadow:0 12px 32px rgba(0,0,0,.35); --r:22px;
+  --sheet:#191b30; --input:rgba(255,255,255,.07);
+}
+@media (prefers-color-scheme: light){
+  :root{
+    --bg:#f2f3f9; --bg2:#ffffff; --card:#ffffff; --card-b:rgba(25,25,70,.07);
+    --text:#15172a; --muted:#6b708e; --faint:rgba(20,20,60,.06);
+    --shadow:0 10px 28px rgba(40,40,100,.08); --sheet:#ffffff; --input:#f1f2f8;
+    --home:#10b981; --trip:#f97316;
+  }
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{
+  background:var(--bg); color:var(--text);
+  font:15px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;
+  overscroll-behavior-y:none; -webkit-font-smoothing:antialiased;
+}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+.blobs{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
+.blobs i{position:absolute;width:60vmax;height:60vmax;border-radius:50%;opacity:.22;animation:float 22s ease-in-out infinite alternate}
+.blobs i:nth-child(1){background:radial-gradient(circle,var(--accent) 0,transparent 65%);top:-25vmax;left:-20vmax}
+.blobs i:nth-child(2){background:radial-gradient(circle,var(--accent2) 0,transparent 65%);bottom:-30vmax;right:-25vmax;animation-delay:-8s}
+.blobs i:nth-child(3){background:radial-gradient(circle,var(--trip) 0,transparent 65%);top:40%;left:50%;width:40vmax;height:40vmax;opacity:.12;animation-delay:-14s}
+@keyframes float{to{transform:translate(6vmax,8vmax) scale(1.1)}}
+
+.app{max-width:560px;margin:0 auto;padding:calc(env(safe-area-inset-top) + 14px) 16px calc(env(safe-area-inset-bottom) + 110px)}
+.view{display:none}
+.view.on{display:block;animation:viewIn .45s cubic-bezier(.2,.8,.2,1)}
+@keyframes viewIn{from{opacity:0;transform:translateY(14px)}}
+
+.top{display:flex;align-items:center;justify-content:space-between;margin:4px 2px 16px}
+.top h1{font-size:28px;line-height:1.1;margin:2px 0 0;letter-spacing:-.02em}
+.hello{color:var(--muted);font-size:14px}
+.icon-btn{width:42px;height:42px;border-radius:14px;background:var(--card);border:1px solid var(--card-b);font-size:19px;display:grid;place-items:center}
+
+.card{background:var(--card);border:1px solid var(--card-b);border-radius:var(--r);padding:16px;margin-bottom:14px;box-shadow:var(--shadow);
+  -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
+.card h2{font-size:16px;margin:0;letter-spacing:-.01em}
+.card-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.sub{color:var(--muted);font-size:13px}
+.stagger>*{animation:rise .55s cubic-bezier(.2,.8,.2,1) both}
+.stagger>*:nth-child(2){animation-delay:.05s}.stagger>*:nth-child(3){animation-delay:.1s}
+.stagger>*:nth-child(4){animation-delay:.15s}.stagger>*:nth-child(5){animation-delay:.2s}
+.stagger>*:nth-child(6){animation-delay:.25s}.stagger>*:nth-child(7){animation-delay:.3s}
+@keyframes rise{from{opacity:0;transform:translateY(18px) scale(.98)}}
+
+/* Hero */
+.hero{position:relative;overflow:hidden;color:#fff;border:0;
+  background:linear-gradient(135deg,#6d4dff 0%,#8b5cf6 45%,#06b6d4 100%)}
+.hero::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 85% -10%,rgba(255,255,255,.35),transparent 45%);pointer-events:none}
+.hero .label{font-size:13px;opacity:.85;font-weight:500}
+.hero .big{font-size:44px;font-weight:800;letter-spacing:-.03em;line-height:1.05;margin:4px 0}
+.hero .big small{font-size:18px;font-weight:600;opacity:.9;margin-left:4px}
+.hero .line2{font-size:14px;opacity:.92}
+.flight{position:relative;margin:20px 6px 4px;height:44px}
+.flight .track{position:absolute;left:22px;right:22px;top:21px;border-top:2px dashed rgba(255,255,255,.55)}
+.flight .fill{position:absolute;left:22px;top:20px;height:4px;border-radius:4px;background:#fff;width:0;transition:width 1.4s cubic-bezier(.2,.8,.2,1)}
+.flight .flag{position:absolute;top:2px;font-size:28px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.25))}
+.flight .flag.a{left:0}.flight .flag.b{right:0}
+.flight .plane{position:absolute;top:6px;left:22px;font-size:24px;transition:left 1.4s cubic-bezier(.2,.8,.2,1);animation:bob 2.4s ease-in-out infinite;transform:translateX(-50%)}
+@keyframes bob{50%{margin-top:-5px}}
+.flight-dates{display:flex;justify-content:space-between;font-size:12px;opacity:.85;margin:0 2px}
+
+/* Stats */
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.stat{margin:0;padding:14px}
+.stat .k{font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.stat .v{font-size:22px;font-weight:750;letter-spacing:-.02em;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stat .s{font-size:12px;color:var(--muted);margin-top:2px}
+.stat.wide{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.pill{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--faint)}
+.pill.good{color:var(--good);background:color-mix(in srgb,var(--good) 15%,transparent)}
+.pill.bad{color:var(--bad);background:color-mix(in srgb,var(--bad) 15%,transparent)}
+.pill.warn{color:var(--warn);background:color-mix(in srgb,var(--warn) 15%,transparent)}
+
+/* Segmented */
+.seg{display:inline-flex;background:var(--faint);border-radius:12px;padding:3px;position:relative}
+.seg button{position:relative;z-index:1;padding:6px 11px;font-size:13px;font-weight:600;color:var(--muted);border-radius:9px;transition:color .25s}
+.seg button.on{color:var(--text)}
+.seg .knob{position:absolute;top:3px;bottom:3px;border-radius:9px;background:var(--bg2);box-shadow:0 2px 8px rgba(0,0,0,.18);transition:all .35s cubic-bezier(.2,.8,.2,1)}
+.seg.full{display:flex}.seg.full button{flex:1}
+
+/* Donut */
+.donut-row{display:flex;align-items:center;gap:16px}
+.donut-wrap{position:relative;width:150px;height:150px;flex:none}
+.donut-wrap svg{width:100%;height:100%;transform:rotate(-90deg)}
+.donut-wrap circle{fill:none;stroke-width:16;transition:stroke-dasharray 1.1s cubic-bezier(.2,.8,.2,1),stroke-dashoffset 1.1s cubic-bezier(.2,.8,.2,1)}
+.donut-center{position:absolute;inset:0;display:grid;place-content:center;text-align:center}
+.donut-center .v{font-weight:800;font-size:18px;letter-spacing:-.02em}
+.donut-center .k{font-size:11.5px;color:var(--muted)}
+.legend{flex:1;min-width:0;display:grid;gap:7px}
+.legend .row{display:flex;align-items:center;gap:8px;font-size:13px}
+.legend .row .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.legend .row .p{color:var(--muted);font-variant-numeric:tabular-nums}
+.empty{color:var(--muted);text-align:center;padding:18px 6px;font-size:14px}
+.empty .e{font-size:34px;display:block;margin-bottom:6px}
+
+/* Bars */
+.bars{display:flex;align-items:flex-end;gap:5px;height:130px;padding-top:10px}
+.bar{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end}
+.bar i{display:block;width:100%;border-radius:7px 7px 4px 4px;height:0;min-height:3px;background:linear-gradient(180deg,var(--accent2),var(--accent));transition:height 1s cubic-bezier(.2,.8,.2,1)}
+.bar.today i{background:linear-gradient(180deg,#fde047,var(--trip))}
+.bar span{font-size:10px;color:var(--muted)}
+
+/* Progress */
+.prog{margin:10px 0 14px}
+.prog:last-child{margin-bottom:2px}
+.prog .t{display:flex;justify-content:space-between;font-size:13.5px;margin-bottom:7px;gap:8px}
+.prog .t b{font-weight:650}
+.prog .track{height:10px;border-radius:99px;background:var(--faint);overflow:hidden}
+.prog .track i{display:block;height:100%;width:0;border-radius:99px;transition:width 1.2s cubic-bezier(.2,.8,.2,1)}
+
+/* Expense list */
+.exp{display:flex;align-items:center;gap:12px;padding:10px 4px;border-radius:14px;width:100%;text-align:left;transition:background .2s}
+.exp:active{background:var(--faint)}
+.exp .ic{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;font-size:20px;flex:none}
+.exp .mid{flex:1;min-width:0}
+.exp .mid .n{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.exp .mid .m{font-size:12.5px;color:var(--muted)}
+.exp .amt{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.exp .amt small{display:block;font-weight:500;font-size:11.5px;color:var(--muted)}
+.day-h{display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted);font-weight:600;margin:16px 6px 4px;text-transform:uppercase;letter-spacing:.04em}
+.search{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--card-b);border-radius:16px;padding:0 14px;margin-bottom:12px}
+.search input{flex:1;border:0;background:none;padding:13px 0;font-size:16px;outline:none}
+.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:6px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;padding:8px 13px;border-radius:999px;background:var(--card);border:1px solid var(--card-b);font-size:13px;font-weight:600;color:var(--muted);transition:all .2s}
+.chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+
+/* Forms */
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin:0 2px 6px}
+.field .hint{font-size:12px;color:var(--muted);margin:5px 2px 0}
+.inp{width:100%;background:var(--input);border:1px solid transparent;border-radius:14px;padding:12px 14px;font-size:16px;outline:none;transition:border-color .2s,box-shadow .2s;-webkit-appearance:none;appearance:none}
+.inp:focus{border-color:var(--accent);box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 22%,transparent)}
+.inp-pre{position:relative}
+.inp-pre span{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--muted);font-weight:600;pointer-events:none}
+.inp-pre .inp{padding-left:52px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:15px;border-radius:16px;font-weight:700;font-size:16px;background:linear-gradient(135deg,var(--accent),#9b7bff);color:#fff;box-shadow:0 8px 22px color-mix(in srgb,var(--accent) 40%,transparent);transition:transform .15s}
+.btn:active{transform:scale(.97)}
+.btn.ghost{background:var(--faint);color:var(--text);box-shadow:none}
+.btn.danger{background:color-mix(in srgb,var(--bad) 14%,transparent);color:var(--bad);box-shadow:none}
+.btn.sm{padding:10px 14px;font-size:14px;border-radius:13px;width:auto;flex:none;white-space:nowrap}
+.range{width:100%;accent-color:var(--accent)}
+
+/* Plan */
+.result{position:relative;overflow:hidden;color:#fff;border:0;background:linear-gradient(140deg,#0f766e,#10b981 60%,#34d399)}
+.result.short{background:linear-gradient(140deg,#9f1239,#e11d48 60%,#fb7185)}
+.result .label{font-size:13px;opacity:.9}
+.result .big{font-size:38px;font-weight:800;letter-spacing:-.03em;margin:4px 0 2px}
+.result .row{display:flex;justify-content:space-between;font-size:14px;padding:7px 0;border-top:1px solid rgba(255,255,255,.18)}
+.result .row:first-of-type{margin-top:10px}
+.result .row b{font-variant-numeric:tabular-nums}
+.water{display:grid;gap:9px}
+.water .w{display:grid;grid-template-columns:110px 1fr auto;align-items:center;gap:10px;font-size:13px}
+.water .w .b{height:14px;border-radius:5px;background:var(--faint);position:relative;overflow:hidden}
+.water .w .b i{position:absolute;top:0;bottom:0;border-radius:5px;transition:all 1s cubic-bezier(.2,.8,.2,1)}
+.water .w .val{font-variant-numeric:tabular-nums;font-weight:600;min-width:70px;text-align:right}
+.bill{display:flex;align-items:center;gap:12px;padding:9px 2px;border-bottom:1px solid var(--faint);width:100%;text-align:left}
+.bill:last-child{border-bottom:0}
+.bill .mid{flex:1;min-width:0}.bill .mid .m{font-size:12px;color:var(--muted)}
+.bill .amt{font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
+.bill .amt small{display:block;font-weight:500;color:var(--muted);font-size:11.5px}
+
+/* Bottom nav */
+.nav{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom) + 10px);width:min(530px,calc(100% - 24px));
+  display:flex;align-items:center;justify-content:space-around;padding:8px 6px;border-radius:26px;z-index:20;
+  background:color-mix(in srgb,var(--bg2) 78%,transparent);border:1px solid var(--card-b);box-shadow:0 14px 40px rgba(0,0,0,.35);
+  -webkit-backdrop-filter:blur(22px) saturate(1.6);backdrop-filter:blur(22px) saturate(1.6)}
+.nav button{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10.5px;font-weight:600;color:var(--muted);padding:5px 10px;border-radius:14px;transition:color .2s,transform .2s;min-width:58px}
+.nav button .i{font-size:21px;transition:transform .3s cubic-bezier(.3,1.6,.5,1)}
+.nav button.on{color:var(--text)}
+.nav button.on .i{transform:translateY(-2px) scale(1.15)}
+.fab{width:58px;height:58px;border-radius:20px !important;margin-top:-30px;background:linear-gradient(135deg,var(--accent),var(--accent2)) !important;color:#fff !important;font-size:30px !important;
+  box-shadow:0 10px 26px color-mix(in srgb,var(--accent) 55%,transparent);display:grid !important;place-items:center;min-width:0 !important;padding:0 !important;animation:pulse 3s ease-in-out infinite}
+.fab:active{transform:scale(.92)}
+@keyframes pulse{50%{box-shadow:0 10px 34px color-mix(in srgb,var(--accent2) 70%,transparent)}}
+
+/* Sheet */
+.backdrop{position:fixed;inset:0;background:rgba(5,6,15,.55);opacity:0;pointer-events:none;transition:opacity .3s;z-index:40}
+.backdrop.on{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:50%;bottom:0;width:min(560px,100%);max-height:92vh;overflow-y:auto;z-index:50;background:var(--sheet);
+  border-radius:28px 28px 0 0;padding:10px 18px calc(env(safe-area-inset-bottom) + 20px);transform:translate(-50%,105%);
+  transition:transform .42s cubic-bezier(.2,.9,.25,1);box-shadow:0 -10px 40px rgba(0,0,0,.35)}
+.sheet.on{transform:translate(-50%,0)}
+.grab{width:42px;height:5px;border-radius:5px;background:var(--faint);margin:2px auto 12px}
+.sheet h3{margin:0 0 14px;font-size:20px;display:flex;justify-content:space-between;align-items:center}
+.amount-in{display:flex;align-items:baseline;justify-content:center;gap:6px;margin:6px 0 16px}
+.amount-in span{font-size:26px;font-weight:700;color:var(--muted)}
+.amount-in input{width:2ch;min-width:2ch;max-width:75vw;text-align:left;transition:width .15s;border:0;background:none;outline:none;font-size:48px;font-weight:800;letter-spacing:-.03em}
+.conv{text-align:center;color:var(--muted);font-size:13px;margin:-10px 0 14px;min-height:18px}
+.cats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+.cat{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 2px;border-radius:16px;background:var(--input);font-size:11.5px;font-weight:600;color:var(--muted);border:2px solid transparent;transition:all .2s}
+.cat .i{font-size:22px;transition:transform .3s cubic-bezier(.3,1.6,.5,1)}
+.cat.on{color:var(--text);border-color:var(--c);background:color-mix(in srgb,var(--c) 16%,transparent)}
+.cat.on .i{transform:scale(1.2)}
+
+/* Wizard */
+.wizard{position:fixed;inset:0;z-index:60;background:var(--bg);overflow-y:auto;padding:calc(env(safe-area-inset-top) + 30px) 20px calc(env(safe-area-inset-bottom) + 30px)}
+.wizard .inner{max-width:480px;margin:0 auto}
+.wizard .logo{font-size:64px;text-align:center;animation:bob 3s ease-in-out infinite}
+.wizard h2{text-align:center;font-size:28px;margin:8px 0 6px;letter-spacing:-.02em}
+.wizard p.lead{text-align:center;color:var(--muted);margin:0 0 24px}
+.steps{display:flex;gap:6px;justify-content:center;margin-bottom:22px}
+.steps i{width:28px;height:5px;border-radius:5px;background:var(--faint);transition:all .3s}
+.steps i.on{background:var(--accent);width:44px}
+.wstep{display:none}.wstep.on{display:block;animation:viewIn .4s}
+
+.toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 12px);transform:translate(-50%,-150%);background:var(--bg2);color:var(--text);border:1px solid var(--card-b);
+  padding:11px 18px;border-radius:16px;font-weight:600;font-size:14px;box-shadow:var(--shadow);z-index:80;transition:transform .4s cubic-bezier(.2,.9,.25,1)}
+.toast.on{transform:translate(-50%,0)}
+.list-plain{margin:0;padding-left:20px;color:var(--muted);font-size:14px}
+.list-plain li{margin:4px 0}
+.list-plain b{color:var(--text)}
+.sec-title{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:22px 6px 8px}
+@media (prefers-reduced-motion: reduce){*{animation:none !important;transition:none !important}}
+</style>
+</head>
+<body>
+<div class="blobs"><i></i><i></i><i></i></div>
+
+<main class="app">
+  <!-- HOME -->
+  <section class="view on" id="v-home">
+    <header class="top">
+      <div><div class="hello" id="hello">Hello</div><h1>Expense Manager</h1></div>
+      <button class="icon-btn" data-go="settings" aria-label="Settings">⚙️</button>
+    </header>
+    <div class="stagger" id="homeBody"></div>
+  </section>
+
+  <!-- EXPENSES -->
+  <section class="view" id="v-list">
+    <header class="top"><div><div class="hello">All your spending</div><h1>Expenses</h1></div>
+      <button class="icon-btn" id="csvBtn" aria-label="Export CSV">⇪</button></header>
+    <div class="search"><span>🔎</span><input id="q" placeholder="Search notes or categories" autocomplete="off"></div>
+    <div class="chips" id="phaseChips"></div>
+    <div class="chips" id="catChips"></div>
+    <div id="listBody"></div>
+  </section>
+
+  <!-- PLAN -->
+  <section class="view" id="v-plan">
+    <header class="top"><div><div class="hello">Before you fly</div><h1>Money plan</h1></div></header>
+    <div id="planResult"></div>
+    <div class="card">
+      <div class="card-h"><h2>Your money now</h2></div>
+      <div class="field"><label id="lblBal">Current bank balance</label>
+        <div class="inp-pre"><span class="hc"></span><input class="inp" inputmode="decimal" data-plan="balance" placeholder="0"></div>
+        <div class="hint" id="balHint">Update it any time. Expenses you log after this date are taken off automatically.</div></div>
+      <div class="row2">
+        <div class="field"><label>Income before leaving</label>
+          <div class="inp-pre"><span class="hc"></span><input class="inp" inputmode="decimal" data-plan="incomeBefore" placeholder="0"></div></div>
+        <div class="field"><label>Income while away</label>
+          <div class="inp-pre"><span class="hc"></span><input class="inp" inputmode="decimal" data-plan="incomeAway" placeholder="0"></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-h"><h2>Budgets</h2></div>
+      <div class="field"><label id="lblBudHome">Spending before you leave</label>
+        <div class="inp-pre"><span class="hc"></span><input class="inp" inputmode="decimal" data-plan="budgetHome" placeholder="0"></div>
+        <div class="hint">Shopping, gifts, flights, last bills: everything until you fly.</div></div>
+      <div class="field"><label id="lblBudTrip">Trip budget</label>
+        <div class="inp-pre"><span class="dc"></span><input class="inp" inputmode="decimal" data-plan="budgetTrip" placeholder="0"></div>
+        <div class="hint" id="tripBudHint"></div></div>
+    </div>
+    <div class="card">
+      <div class="card-h"><div><h2 id="billsTitle">Bills at home while you're away</h2><div class="sub" id="billsSub"></div></div>
+        <button class="btn sm" id="addBill">+ Add</button></div>
+      <div id="billsBody"></div>
+      <div class="chips" id="billSuggest" style="margin-top:10px"></div>
+      <div class="field" style="margin:14px 0 0"><label>Safety buffer: <span id="bufVal">10</span>%</label>
+        <input type="range" class="range" min="0" max="50" step="5" data-plan="buffer"></div>
+    </div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section class="view" id="v-settings">
+    <header class="top"><div><div class="hello">Make it yours</div><h1>Settings</h1></div></header>
+    <div class="card">
+      <div class="card-h"><h2>Trip</h2></div>
+      <div class="field"><label>Your name (optional)</label><input class="inp" data-set="name" placeholder="e.g. Sam"></div>
+      <div class="row2">
+        <div class="field"><label>Home country</label><input class="inp" data-set="homeName"></div>
+        <div class="field"><label>Home currency</label><select class="inp cur-sel" data-set="homeCur"></select></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>Destination</label><input class="inp" data-set="destName"></div>
+        <div class="field"><label>Destination currency</label><select class="inp cur-sel" data-set="destCur"></select></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>Leaving on</label><input type="date" class="inp" data-set="depart"></div>
+        <div class="field"><label>Coming back</label><input type="date" class="inp" data-set="ret"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-h"><h2>Exchange rate</h2><button class="btn sm ghost" id="rateBtn">↻ Live rate</button></div>
+      <div class="field" style="margin:0"><label id="rateLbl">1 AUD =</label>
+        <div class="inp-pre"><span class="dc"></span><input class="inp" inputmode="decimal" data-set="rate"></div>
+        <div class="hint" id="rateHint"></div></div>
+    </div>
+    <div class="card">
+      <div class="card-h"><h2>Your data</h2></div>
+      <p class="sub" style="margin:0 0 12px">Everything stays on this phone. No account, no servers. Back up before you change phones.</p>
+      <div class="row2" style="margin-bottom:10px">
+        <button class="btn ghost" id="exportBtn">⬇︎ Backup</button>
+        <button class="btn ghost" id="importBtn">⬆︎ Restore</button>
+      </div>
+      <button class="btn ghost" id="csvBtn2" style="margin-bottom:10px">📄 Export CSV (Excel)</button>
+      <button class="btn danger" id="resetBtn">Erase everything</button>
+      <input type="file" id="importFile" accept="application/json,.json" hidden>
+    </div>
+    <div class="card">
+      <div class="card-h"><h2>📲 Add to iPhone home screen</h2></div>
+      <ol class="list-plain">
+        <li>Open this page in <b>Safari</b></li>
+        <li>Tap the <b>Share</b> button (square with ↑)</li>
+        <li>Choose <b>Add to Home Screen</b> and tap <b>Add</b></li>
+      </ol>
+      <p class="sub" style="margin:12px 0 0">It then opens full-screen like an app and works offline.</p>
+    </div>
+  </section>
+</main>
+
+<nav class="nav">
+  <button data-go="home" class="on"><span class="i">🏠</span>Home</button>
+  <button data-go="list"><span class="i">🧾</span>Expenses</button>
+  <button class="fab" id="fab" aria-label="Add expense">+</button>
+  <button data-go="plan"><span class="i">🧮</span>Plan</button>
+  <button data-go="settings"><span class="i">⚙️</span>Settings</button>
+</nav>
+
+<div class="backdrop" id="backdrop"></div>
+
+<!-- Expense sheet -->
+<div class="sheet" id="expSheet" role="dialog" aria-modal="true">
+  <div class="grab"></div>
+  <h3><span id="expTitle">New expense</span><button class="icon-btn" data-close aria-label="Close">✕</button></h3>
+  <div class="seg full" id="expPhase"></div>
+  <div class="amount-in"><span id="expSym">$</span><input id="expAmt" inputmode="decimal" placeholder="0" autocomplete="off"></div>
+  <div class="conv" id="expConv"></div>
+  <div class="seg full" id="expCur" style="margin-bottom:16px"></div>
+  <div class="cats" id="expCats"></div>
+  <div class="row2">
+    <div class="field"><label>Date</label><input type="date" class="inp" id="expDate"></div>
+    <div class="field"><label>Note</label><input class="inp" id="expNote" placeholder="Optional" maxlength="80"></div>
+  </div>
+  <button class="btn" id="expSave">Save expense</button>
+  <button class="btn danger" id="expDel" style="margin-top:10px;display:none">Delete</button>
+</div>
+
+<!-- Bill sheet -->
+<div class="sheet" id="billSheet" role="dialog" aria-modal="true">
+  <div class="grab"></div>
+  <h3><span id="billTitle">Recurring bill</span><button class="icon-btn" data-close aria-label="Close">✕</button></h3>
+  <div class="field"><label>Name</label><input class="inp" id="billName" placeholder="e.g. Rent, Phone, Insurance" maxlength="40"></div>
+  <div class="row2">
+    <div class="field"><label>Amount</label><div class="inp-pre"><span class="hc"></span><input class="inp" id="billAmt" inputmode="decimal" placeholder="0"></div></div>
+    <div class="field"><label>How often</label><select class="inp" id="billFreq">
+      <option value="weekly">Weekly</option><option value="fortnightly">Fortnightly</option>
+      <option value="monthly" selected>Monthly</option><option value="quarterly">Quarterly</option><option value="once">One-off</option></select></div>
+  </div>
+  <button class="btn" id="billSave">Save bill</button>
+  <button class="btn danger" id="billDel" style="margin-top:10px;display:none">Delete</button>
+</div>
+
+<!-- First-run wizard -->
+<div class="wizard" id="wizard" hidden>
+  <div class="inner">
+    <div class="steps"><i class="on"></i><i></i><i></i></div>
+    <div class="wstep on" data-step="0">
+      <div class="logo">✈️</div>
+      <h2>Expense Manager</h2>
+      <p class="lead">Track spending at home and on your trip, and know exactly how much to leave in your account.</p>
+      <div class="field"><label>Your name (optional)</label><input class="inp" id="wName" placeholder="e.g. Sam"></div>
+      <button class="btn" data-next>Let's start</button>
+    </div>
+    <div class="wstep" data-step="1">
+      <div class="logo">🌏</div>
+      <h2>Where are you going?</h2>
+      <p class="lead">You can change this later in Settings.</p>
+      <div class="row2">
+        <div class="field"><label>Home country</label><input class="inp" id="wHome" value="Australia"></div>
+        <div class="field"><label>Currency</label><select class="inp cur-sel" id="wHomeCur"></select></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>Destination</label><input class="inp" id="wDest" value="India"></div>
+        <div class="field"><label>Currency</label><select class="inp cur-sel" id="wDestCur"></select></div>
+      </div>
+      <button class="btn" data-next>Next</button>
+    </div>
+    <div class="wstep" data-step="2">
+      <div class="logo">📅</div>
+      <h2>When?</h2>
+      <p class="lead">Used for your countdown and to estimate bills while you're away.</p>
+      <div class="row2">
+        <div class="field"><label>Leaving on</label><input type="date" class="inp" id="wDepart"></div>
+        <div class="field"><label>Coming back</label><input type="date" class="inp" id="wRet"></div>
+      </div>
+      <div class="sub" id="wDur" style="text-align:center;margin:-4px 0 16px"></div>
+      <button class="btn" id="wFinish">Start tracking 🚀</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+'use strict';
+const KEY = 'expense-manager-v1';
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+
+const CURS = {AUD:'🇦🇺',INR:'🇮🇳',USD:'🇺🇸',GBP:'🇬🇧',EUR:'🇪🇺',NZD:'🇳🇿',CAD:'🇨🇦',SGD:'🇸🇬',AED:'🇦🇪',SAR:'🇸🇦',QAR:'🇶🇦',
+  PKR:'🇵🇰',BDT:'🇧🇩',LKR:'🇱🇰',NPR:'🇳🇵',PHP:'🇵🇭',IDR:'🇮🇩',MYR:'🇲🇾',THB:'🇹🇭',VND:'🇻🇳',JPY:'🇯🇵',KRW:'🇰🇷',CNY:'🇨🇳',HKD:'🇭🇰',ZAR:'🇿🇦',CHF:'🇨🇭'};
+const CATS = [
+  {id:'food',name:'Food',icon:'🍛',color:'#fb923c'},{id:'groceries',name:'Groceries',icon:'🛒',color:'#facc15'},
+  {id:'transport',name:'Transport',icon:'🚕',color:'#38bdf8'},{id:'flights',name:'Flights',icon:'✈️',color:'#818cf8'},
+  {id:'stay',name:'Stay',icon:'🏨',color:'#c084fc'},{id:'shopping',name:'Shopping',icon:'🛍️',color:'#f472b6'},
+  {id:'gifts',name:'Gifts',icon:'🎁',color:'#f87171'},{id:'bills',name:'Bills',icon:'🧾',color:'#94a3b8'},
+  {id:'health',name:'Health',icon:'💊',color:'#4ade80'},{id:'fun',name:'Fun',icon:'🎉',color:'#fbbf24'},
+  {id:'phone',name:'Phone/Data',icon:'📱',color:'#2dd4bf'},{id:'other',name:'Other',icon:'📦',color:'#a8a29e'}];
+const CAT = Object.fromEntries(CATS.map(c => [c.id, c]));
+const BILL_SUGGEST = ['Rent','Phone','Car loan','Insurance','Electricity','Internet','Subscriptions','Gym'];
+const FREQ = {weekly:'Weekly',fortnightly:'Fortnightly',monthly:'Monthly',quarterly:'Quarterly',once:'One-off'};
+
+// ---------- dates ----------
+const pad = n => String(n).padStart(2, '0');
+const iso = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const today = () => iso(new Date());
+const parse = s => { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); };
+const addDays = (s, n) => { const d = parse(s); d.setDate(d.getDate()+n); return iso(d); };
+const diffDays = (a, b) => Math.round((parse(b) - parse(a)) / 864e5);
+const fmtDate = (s, o = {day:'numeric', month:'short'}) => parse(s).toLocaleDateString(undefined, o);
+
+// ---------- state ----------
+const fresh = () => ({
+  v:1,
+  settings:{name:'',homeName:'Australia',homeCur:'AUD',destName:'India',destCur:'INR',rate:56,rateUpdated:null,
+    depart:addDays(today(),21),ret:addDays(today(),81),setupDone:false},
+  plan:{balance:0,balanceDate:today(),incomeBefore:0,incomeAway:0,budgetHome:0,budgetTrip:0,buffer:10},
+  bills:[], expenses:[],
+});
+let state;
+try { state = JSON.parse(localStorage.getItem(KEY)) || fresh(); } catch { state = fresh(); }
+const base = fresh();
+state.settings = {...base.settings, ...state.settings};
+state.plan = {...base.plan, ...state.plan};
+state.bills ||= []; state.expenses ||= [];
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {} };
+const S = () => state.settings;
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+// ---------- money ----------
+const locale = c => c === 'INR' ? 'en-IN' : c === 'AUD' ? 'en-AU' : undefined;
+function fmt(n, cur, opts = {}) {
+  const big = Math.abs(n) >= 1000 || opts.whole;
+  try {
+    return new Intl.NumberFormat(locale(cur), {style:'currency', currency:cur, maximumFractionDigits: big ? 0 : 2,
+      minimumFractionDigits: big ? 0 : (Number.isInteger(n) ? 0 : 2), notation: opts.compact && Math.abs(n) >= 1e5 ? 'compact' : 'standard'}).format(n);
+  } catch { return cur + ' ' + Math.round(n); }
+}
+function sym(cur) {
+  try { return new Intl.NumberFormat(locale(cur), {style:'currency', currency:cur}).formatToParts(0).find(p => p.type === 'currency').value; }
+  catch { return cur; }
+}
+const num = v => { const n = parseFloat(String(v).replace(/[^0-9.\-]/g, '')); return isFinite(n) ? n : 0; };
+const toHome = (a, c) => c === S().homeCur ? a : a / (S().rate || 1);
+const toDest = (a, c) => c === S().destCur ? a : a * (S().rate || 1);
+const sum = a => a.reduce((x, y) => x + y, 0);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const flag = c => CURS[c] || '🏳️';
+const phaseLabel = p => p === 'home' ? `${S().homeName} (before trip)` : `In ${S().destName}`;
+const phaseShort = p => p === 'home' ? `${flag(S().homeCur)} ${S().homeName}` : `${flag(S().destCur)} ${S().destName}`;
+
+function billCost(b, days) {
+  const a = num(b.amount);
+  return {weekly:a*days/7, fortnightly:a*days/14, monthly:a*days/30.44, quarterly:a*days/91.3, once:a}[b.freq] ?? 0;
+}
+
+function calc() {
+  const s = S(), p = state.plan, t = today();
+  const tripDays = Math.max(1, diffDays(s.depart, s.ret));
+  const untilDepart = diffDays(t, s.depart);
+  const status = t < s.depart ? 'before' : t <= s.ret ? 'during' : 'after';
+  const dayOfTrip = status === 'during' ? Math.min(tripDays, diffDays(s.depart, t) + 1) : status === 'after' ? tripDays : 0;
+  const homeExp = state.expenses.filter(e => e.phase === 'home');
+  const tripExp = state.expenses.filter(e => e.phase === 'trip');
+  const homeSpent = sum(homeExp.map(e => toHome(e.amount, e.cur)));
+  const tripSpent = sum(tripExp.map(e => toDest(e.amount, e.cur)));
+  const spentSinceBal = sum(homeExp.filter(e => e.date > p.balanceDate).map(e => toHome(e.amount, e.cur)));
+  const billsAway = sum(state.bills.map(b => billCost(b, tripDays)));
+  const bufferAmt = billsAway * p.buffer / 100;
+  const keep = Math.max(0, billsAway + bufferAmt - p.incomeAway);
+  const remainingHome = Math.max(0, p.budgetHome - homeSpent);
+  const effBalance = p.balance - spentSinceBal;
+  const available = effBalance + p.incomeBefore - remainingHome - keep;
+  const availableDest = available * s.rate;
+  const tripLeft = p.budgetTrip - tripSpent;
+  const daysLeft = status === 'during' ? tripDays - dayOfTrip + 1 : tripDays;
+  const daily = p.budgetTrip ? Math.max(0, tripLeft) / Math.max(1, status === 'after' ? 1 : daysLeft) : 0;
+  return {tripDays, untilDepart, status, dayOfTrip, homeSpent, tripSpent, billsAway, bufferAmt, keep, remainingHome,
+    effBalance, spentSinceBal, available, availableDest, tripLeft, daysLeft, daily, homeExp, tripExp};
+}
+
+// ---------- animation helpers ----------
+function countUp(el, to, f, dur = 900) {
+  const from = 0, t0 = performance.now();
+  const step = now => {
+    const k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+    el.textContent = f(from + (to - from) * e);
+    if (k < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+function animateIn(root) {
+  $$('[data-count]', root).forEach(el => {
+    const [v, cur, compact] = el.dataset.count.split('|');
+    const f = cur === 'n' ? x => Math.round(x) : x => fmt(x, cur, {compact: !!compact});
+    countUp(el, +v, f);
+  });
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    $$('[data-w]', root).forEach(el => el.style.width = el.dataset.w);
+    $$('[data-h]', root).forEach(el => el.style.height = el.dataset.h);
+    $$('[data-l]', root).forEach(el => el.style.left = el.dataset.l);
+    $$('circle[data-dash]', root).forEach(el => { el.style.strokeDasharray = el.dataset.dash; el.style.strokeDashoffset = el.dataset.off; });
+  }));
+}
+let toastT;
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.classList.add('on');
+  clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2200);
+}
+function haptic() { try { navigator.vibrate && navigator.vibrate(12); } catch {} }
+
+// ---------- segmented control ----------
+function seg(el, options, value, onChange) {
+  el.innerHTML = '<span class="knob"></span>' + options.map(o => `<button type="button" data-v="${o.v}">${esc(o.t)}</button>`).join('');
+  const set = v => {
+    $$('button', el).forEach(b => b.classList.toggle('on', b.dataset.v === v));
+    const on = $(`button[data-v="${v}"]`, el), k = $('.knob', el);
+    if (on) { k.style.left = on.offsetLeft + 'px'; k.style.width = on.offsetWidth + 'px'; }
+  };
+  el.onclick = e => { const b = e.target.closest('button'); if (!b) return; set(b.dataset.v); onChange(b.dataset.v); };
+  requestAnimationFrame(() => set(value));
+  return set;
+}
+
+// ---------- HOME ----------
+let homeSeg = 'all';
+function renderHome() {
+  const s = S(), c = calc(), name = s.name ? `, ${s.name}` : '';
+  const h = new Date().getHours();
+  $('#hello').textContent = (h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening') + name + ' 👋';
+
+  // hero
+  let big, label, line2, prog;
+  if (c.status === 'before') {
+    label = `Countdown to ${esc(s.destName)}`;
+    big = `<span data-count="${c.untilDepart}|n">0</span><small>${c.untilDepart === 1 ? 'day' : 'days'}</small>`;
+    line2 = `Flying ${fmtDate(s.depart, {weekday:'short', day:'numeric', month:'short'})} · ${c.tripDays}-day trip`;
+    prog = 0;
+  } else if (c.status === 'during') {
+    label = `You're in ${esc(s.destName)} ${flag(s.destCur)}`;
+    big = `Day <span data-count="${c.dayOfTrip}|n">0</span><small>of ${c.tripDays}</small>`;
+    line2 = state.plan.budgetTrip ? `You can spend <b>${fmt(c.daily, s.destCur, {whole:true})}</b> a day to stay on budget` : `${c.daysLeft} days to go · set a trip budget in Plan`;
+    prog = c.dayOfTrip / c.tripDays;
+  } else {
+    label = 'Welcome home 🎉';
+    big = `<span data-count="${c.tripSpent}|${s.destCur}|c">0</span>`;
+    line2 = `Spent in ${esc(s.destName)} over ${c.tripDays} days`;
+    prog = 1;
+  }
+  const hero = `<div class="card hero">
+    <div class="label">${label}</div><div class="big">${big}</div><div class="line2">${line2}</div>
+    <div class="flight"><div class="track"></div><div class="fill" data-w="calc(${prog} * (100% - 44px))"></div>
+      <span class="flag a">${flag(s.homeCur)}</span><span class="flag b">${flag(s.destCur)}</span>
+      <span class="plane" data-l="calc(22px + ${Math.min(0.9, Math.max(0.1, prog))} * (100% - 44px))">✈️</span></div>
+    <div class="flight-dates"><span>${fmtDate(s.depart)}</span><span>${fmtDate(s.ret)}</span></div></div>`;
+
+  // stats
+  const keepCls = c.available < 0 ? 'bad' : 'good';
+  const stats = `<div class="stats">
+    <div class="card stat"><div class="k"><span class="dot" style="background:var(--home)"></span>${esc(s.homeName)}</div>
+      <div class="v" data-count="${c.homeSpent}|${s.homeCur}">0</div><div class="s">${c.homeExp.length} expenses</div></div>
+    <div class="card stat"><div class="k"><span class="dot" style="background:var(--trip)"></span>${esc(s.destName)}</div>
+      <div class="v" data-count="${c.tripSpent}|${s.destCur}|c">0</div><div class="s">≈ ${fmt(c.tripSpent / s.rate, s.homeCur, {whole:true})}</div></div>
+    <button class="card stat wide" data-go="plan" style="text-align:left;color:inherit">
+      <div><div class="k">🏦 Keep in your account</div><div class="v" data-count="${c.keep}|${s.homeCur}">0</div>
+        <div class="s">${state.bills.length ? `${state.bills.length} bills over ${c.tripDays} days + ${state.plan.buffer}% buffer` : 'Add your bills in Plan →'}</div></div>
+      <span class="pill ${keepCls}">${c.available < 0 ? 'Short ' + fmt(-c.available, s.homeCur, {whole:true}) : 'Free ' + fmt(c.available, s.homeCur, {whole:true})}</span>
+    </button></div>`;
+
+  // donut
+  const list = homeSeg === 'home' ? c.homeExp : homeSeg === 'trip' ? c.tripExp : state.expenses;
+  const cur = homeSeg === 'trip' ? s.destCur : s.homeCur;
+  const conv = homeSeg === 'trip' ? toDest : toHome;
+  const byCat = {};
+  list.forEach(e => byCat[e.cat] = (byCat[e.cat] || 0) + conv(e.amount, e.cur));
+  const cats = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
+  const total = sum(cats.map(x => x[1]));
+  const R = 52, C = 2 * Math.PI * R;
+  let off = 0, circles = `<circle cx="70" cy="70" r="${R}" stroke="var(--faint)"></circle>`;
+  cats.forEach(([id, v]) => {
+    const len = total ? v / total * C : 0;
+    circles += `<circle cx="70" cy="70" r="${R}" stroke="${(CAT[id]||CAT.other).color}" stroke-linecap="butt"
+      style="stroke-dasharray:0 ${C};stroke-dashoffset:0" data-dash="${Math.max(0, len - 1.5)} ${C}" data-off="${-off}"></circle>`;
+    off += len;
+  });
+  const legend = cats.slice(0, 6).map(([id, v]) => { const k = CAT[id] || CAT.other;
+    return `<div class="row"><span class="dot" style="background:${k.color}"></span><span class="n">${k.icon} ${k.name}</span><span class="p">${Math.round(v / total * 100)}%</span></div>`; }).join('');
+  const donut = `<div class="card"><div class="card-h"><h2>Where it goes</h2><div class="seg" id="homeSeg"></div></div>
+    ${total ? `<div class="donut-row"><div class="donut-wrap"><svg viewBox="0 0 140 140">${circles}</svg>
+      <div class="donut-center"><div class="v" data-count="${total}|${cur}|c">0</div><div class="k">total</div></div></div>
+      <div class="legend">${legend}</div></div>`
+    : `<div class="empty"><span class="e">🍩</span>No expenses here yet. Tap <b>+</b> to add one.</div>`}</div>`;
+
+  // bars (last 14 days)
+  const days = [...Array(14)].map((_, i) => addDays(today(), i - 13));
+  const vals = days.map(d => sum(list.filter(e => e.date === d).map(e => conv(e.amount, e.cur))));
+  const max = Math.max(...vals, 1);
+  const bars = `<div class="card"><div class="card-h"><h2>Last 14 days</h2><span class="sub">${fmt(sum(vals), cur, {whole:true})}</span></div>
+    <div class="bars">${days.map((d, i) => `<div class="bar ${d === today() ? 'today' : ''}" title="${fmtDate(d)}: ${fmt(vals[i], cur)}">
+      <i data-h="${vals[i] / max * 100}%"></i><span>${parse(d).getDate()}</span></div>`).join('')}</div></div>`;
+
+  // budgets
+  const p = state.plan;
+  const pb = (label, spent, budget, cur, color) => {
+    if (!budget) return `<div class="prog"><div class="t"><b>${label}</b><span class="sub">No budget set</span></div><div class="track"><i></i></div></div>`;
+    const pct = spent / budget, col = pct > 1 ? 'var(--bad)' : pct > .85 ? 'var(--warn)' : color;
+    return `<div class="prog"><div class="t"><b>${label}</b><span>${fmt(spent, cur, {whole:true})} <span class="sub">/ ${fmt(budget, cur, {whole:true})}</span></span></div>
+      <div class="track"><i style="background:${col}" data-w="${Math.min(100, pct * 100)}%"></i></div></div>`;
+  };
+  const budgets = `<div class="card"><div class="card-h"><h2>Budgets</h2><button class="sub" data-go="plan">Edit →</button></div>
+    ${pb(`${flag(s.homeCur)} Before the trip`, c.homeSpent, p.budgetHome, s.homeCur, 'var(--home)')}
+    ${pb(`${flag(s.destCur)} In ${esc(s.destName)}`, c.tripSpent, p.budgetTrip, s.destCur, 'var(--trip)')}</div>`;
+
+  // recent
+  const recent = [...state.expenses].sort(byDateDesc).slice(0, 5);
+  const rec = `<div class="card"><div class="card-h"><h2>Recent</h2>${recent.length ? '<button class="sub" data-go="list">See all →</button>' : ''}</div>
+    ${recent.length ? recent.map(expRow).join('') : '<div class="empty"><span class="e">🧾</span>Your latest expenses will show here.</div>'}</div>`;
+
+  const body = $('#homeBody');
+  body.innerHTML = hero + stats + donut + bars + budgets + rec;
+  seg($('#homeSeg'), [{v:'all',t:'All'},{v:'home',t:flag(s.homeCur)},{v:'trip',t:flag(s.destCur)}], homeSeg, v => { homeSeg = v; renderHome(); });
+  animateIn(body);
+}
+
+const byDateDesc = (a, b) => b.date.localeCompare(a.date) || (b.ts || 0) - (a.ts || 0);
+function expRow(e) {
+  const k = CAT[e.cat] || CAT.other, s = S();
+  const other = e.cur === s.homeCur ? fmt(toDest(e.amount, e.cur), s.destCur) : fmt(toHome(e.amount, e.cur), s.homeCur);
+  return `<button class="exp" data-edit="${e.id}"><span class="ic" style="background:color-mix(in srgb,${k.color} 20%,transparent)">${k.icon}</span>
+    <div class="mid"><div class="n">${esc(e.note || k.name)}</div><div class="m">${e.phase === 'home' ? flag(s.homeCur) : flag(s.destCur)} ${k.name} · ${fmtDate(e.date)}</div></div>
+    <div class="amt">${fmt(e.amount, e.cur)}<small>≈ ${other}</small></div></button>`;
+}
+
+// ---------- LIST ----------
+let fPhase = 'all', fCat = 'all';
+function renderList() {
+  const s = S();
+  const pc = $('#phaseChips');
+  pc.innerHTML = [['all','All'],['home',phaseShort('home')],['trip',phaseShort('trip')]]
+    .map(([v, t]) => `<button class="chip ${fPhase === v ? 'on' : ''}" data-fp="${v}">${esc(t)}</button>`).join('');
+  const used = [...new Set(state.expenses.map(e => e.cat))];
+  $('#catChips').innerHTML = used.length > 1 ? [`<button class="chip ${fCat === 'all' ? 'on' : ''}" data-fc="all">All categories</button>`]
+    .concat(used.map(id => `<button class="chip ${fCat === id ? 'on' : ''}" data-fc="${id}">${CAT[id]?.icon || ''} ${CAT[id]?.name || id}</button>`)).join('') : '';
+  const q = $('#q').value.trim().toLowerCase();
+  const items = state.expenses.filter(e => (fPhase === 'all' || e.phase === fPhase) && (fCat === 'all' || e.cat === fCat) &&
+    (!q || (e.note || '').toLowerCase().includes(q) || (CAT[e.cat]?.name || '').toLowerCase().includes(q))).sort(byDateDesc);
+  const body = $('#listBody');
+  if (!items.length) { body.innerHTML = `<div class="card"><div class="empty"><span class="e">🔍</span>${state.expenses.length ? 'Nothing matches.' : 'No expenses yet. Tap <b>+</b> to add your first one.'}</div></div>`; return; }
+  const groups = {};
+  items.forEach(e => (groups[e.date] ||= []).push(e));
+  const totalHome = sum(items.map(e => toHome(e.amount, e.cur)));
+  body.innerHTML = `<div class="card stat" style="margin-bottom:6px"><div class="k">${items.length} expenses · total</div>
+      <div class="v" data-count="${totalHome}|${s.homeCur}">0</div><div class="s">≈ ${fmt(totalHome * s.rate, s.destCur, {whole:true})}</div></div>` +
+    Object.entries(groups).map(([d, es]) => `<div class="day-h"><span>${d === today() ? 'Today' : d === addDays(today(), -1) ? 'Yesterday' : fmtDate(d, {weekday:'short', day:'numeric', month:'short'})}</span>
+      <span>${fmt(sum(es.map(e => toHome(e.amount, e.cur))), s.homeCur)}</span></div><div class="card" style="padding:6px 10px">${es.map(expRow).join('')}</div>`).join('');
+  animateIn(body);
+}
+
+// ---------- PLAN ----------
+function renderPlan(full = true) {
+  const s = S(), p = state.plan, c = calc();
+  if (full) {
+    $$('[data-plan]').forEach(el => { const v = p[el.dataset.plan]; if (document.activeElement !== el) el.value = el.type === 'range' ? v : (v || ''); });
+    $('#lblBudHome').textContent = `Spending in ${s.homeName} before you leave`;
+    $('#lblBudTrip').textContent = `Budget for ${s.destName} (${c.tripDays} days)`;
+    $('#billsTitle').textContent = `Bills in ${s.homeName} while you're away`;
+    $('#billsSub').textContent = `Rent, phone, loans that keep going for ${c.tripDays} days`;
+    $('#lblBal').textContent = `Current bank balance (as of ${fmtDate(p.balanceDate)})`;
+    renderBills(c);
+  }
+  $('#bufVal').textContent = p.buffer;
+  $('#tripBudHint').textContent = p.budgetTrip ? `≈ ${fmt(p.budgetTrip / s.rate, s.homeCur, {whole:true})} · ${fmt(p.budgetTrip / c.tripDays, s.destCur, {whole:true})} per day` : 'Daily food, travel, shopping, family gifts…';
+
+  const short = c.available < 0;
+  const needDest = p.budgetTrip, haveDest = Math.max(0, c.availableDest);
+  const covers = needDest ? haveDest >= needDest : null;
+  const res = $('#planResult');
+  res.innerHTML = `<div class="card result ${short ? 'short' : ''}">
+    <div class="label">🏦 Keep in your ${esc(s.homeName)} account</div>
+    <div class="big" data-count="${c.keep}|${s.homeCur}">0</div>
+    <div style="font-size:14px;opacity:.92">${state.bills.length ? `Covers ${state.bills.length} bill${state.bills.length > 1 ? 's' : ''} for ${c.tripDays} days plus a ${p.buffer}% buffer${p.incomeAway ? ', minus income while away' : ''}` : 'Add the bills that keep running while you are away ↓'}</div>
+    <div class="row"><span>${short ? '⚠️ Shortfall' : '✈️ Free to take on the trip'}</span><b>${fmt(Math.abs(c.available), s.homeCur, {whole:true})}</b></div>
+    <div class="row"><span>In ${esc(s.destCur)}</span><b>${fmt(Math.abs(c.availableDest), s.destCur, {whole:true})}</b></div>
+    ${needDest ? `<div class="row"><span>${covers ? '✅ Covers your trip budget' : '❗ Trip budget gap'}</span><b>${covers ? fmt(haveDest - needDest, s.destCur, {whole:true}) + ' spare' : fmt(needDest - haveDest, s.destCur, {whole:true})}</b></div>` : ''}
+  </div>
+  <div class="card"><div class="card-h"><h2>How it adds up</h2><span class="sub">${s.homeCur}</span></div><div class="water">${waterfall(c)}</div></div>`;
+  animateIn(res);
+}
+function waterfall(c) {
+  const s = S(), p = state.plan;
+  const rows = [
+    ['Balance now', c.effBalance, 'var(--accent2)'],
+    ['+ Income before', p.incomeBefore, 'var(--accent2)'],
+    ['− Pre-trip spend', -c.remainingHome, 'var(--home)'],
+    ['− Bills away', -c.billsAway, '#94a3b8'],
+    ['− Buffer', -c.bufferAmt, '#cbd5e1'],
+    ['+ Income away', Math.min(p.incomeAway, c.billsAway + c.bufferAmt), 'var(--accent2)'],
+  ];
+  const max = Math.max(1, ...rows.map(r => Math.abs(r[1])), Math.abs(c.available));
+  const html = rows.map(([l, v, col]) => `<div class="w"><span>${l}</span><div class="b"><i style="left:0;width:0;background:${col}" data-w="${Math.abs(v) / max * 100}%"></i></div>
+    <span class="val" style="color:${v < 0 ? 'var(--muted)' : 'inherit'}">${fmt(v, s.homeCur, {whole:true})}</span></div>`).join('');
+  return html + `<div class="w" style="font-weight:700;padding-top:6px;border-top:1px solid var(--faint)"><span>= For the trip</span><div class="b"><i style="left:0;width:0;background:${c.available < 0 ? 'var(--bad)' : 'var(--good)'}" data-w="${Math.abs(c.available) / max * 100}%"></i></div>
+    <span class="val" style="color:${c.available < 0 ? 'var(--bad)' : 'var(--good)'}">${fmt(c.available, s.homeCur, {whole:true})}</span></div>`;
+}
+function renderBills(c) {
+  const s = S();
+  $('#billsBody').innerHTML = state.bills.length ? state.bills.map(b => `<button class="bill" data-bill="${b.id}">
+      <span style="font-size:20px">🧾</span><div class="mid"><div>${esc(b.name)}</div><div class="m">${fmt(num(b.amount), s.homeCur)} · ${FREQ[b.freq]}</div></div>
+      <div class="amt">${fmt(billCost(b, c.tripDays), s.homeCur, {whole:true})}<small>while away</small></div></button>`).join('') +
+      `<div class="bill" style="font-weight:700"><div class="mid">Total for ${c.tripDays} days</div><div class="amt">${fmt(c.billsAway, s.homeCur, {whole:true})}</div></div>`
+    : `<div class="empty" style="padding:8px"><span class="e">🧾</span>No bills yet. Quick-add one below.</div>`;
+  const have = new Set(state.bills.map(b => b.name.toLowerCase()));
+  $('#billSuggest').innerHTML = BILL_SUGGEST.filter(n => !have.has(n.toLowerCase())).map(n => `<button class="chip" data-sug="${n}">+ ${n}</button>`).join('');
+}
+
+// ---------- SETTINGS ----------
+function fillCurSelects() {
+  const opts = Object.keys(CURS).map(c => `<option value="${c}">${CURS[c]} ${c}</option>`).join('');
+  $$('.cur-sel').forEach(el => el.innerHTML = opts);
+}
+function renderSettings() {
+  const s = S();
+  $$('[data-set]').forEach(el => { if (document.activeElement !== el) el.value = s[el.dataset.set] ?? ''; });
+  $('#rateLbl').textContent = `1 ${s.homeCur} =`;
+  $('#rateHint').textContent = s.rateUpdated ? `Live rate fetched ${new Date(s.rateUpdated).toLocaleString()}` : 'Typed in by you. Tap Live rate to fetch today’s rate.';
+}
+function applyCurLabels() {
+  const s = S();
+  $$('.hc').forEach(el => el.textContent = sym(s.homeCur));
+  $$('.dc').forEach(el => el.textContent = sym(s.destCur));
+}
+async function fetchRate(quiet) {
+  const s = S();
+  try {
+    const r = await fetch(`https://open.er-api.com/v6/latest/${encodeURIComponent(s.homeCur)}`);
+    const j = await r.json();
+    const v = j?.rates?.[s.destCur];
+    if (!v) throw 0;
+    s.rate = Math.round(v * 10000) / 10000; s.rateUpdated = Date.now(); save(); renderAll();
+    if (!quiet) toast(`1 ${s.homeCur} = ${s.rate} ${s.destCur}`);
+  } catch { if (!quiet) toast('Could not fetch the rate. Check your connection.'); }
+}
+
+// ---------- navigation ----------
+let view = 'home';
+function go(v) {
+  view = v;
+  $$('.view').forEach(el => el.classList.toggle('on', el.id === 'v-' + v));
+  $$('.nav button[data-go]').forEach(b => b.classList.toggle('on', b.dataset.go === v));
+  window.scrollTo({top:0});
+  renderView();
+}
+function renderView() {
+  applyCurLabels();
+  if (view === 'home') renderHome();
+  if (view === 'list') renderList();
+  if (view === 'plan') renderPlan();
+  if (view === 'settings') renderSettings();
+}
+const renderAll = renderView;
+
+// ---------- sheets ----------
+let openSheet = null;
+function showSheet(el) { openSheet = el; el.classList.add('on'); $('#backdrop').classList.add('on'); }
+function hideSheet() { if (!openSheet) return; openSheet.classList.remove('on'); $('#backdrop').classList.remove('on'); openSheet = null; document.activeElement?.blur(); }
+$('#backdrop').onclick = hideSheet;
+$$('[data-close]').forEach(b => b.onclick = hideSheet);
+// drag-down to close
+$$('.sheet').forEach(sh => {
+  let y0 = null, dy = 0;
+  sh.addEventListener('touchstart', e => { if (sh.scrollTop <= 0) { y0 = e.touches[0].clientY; dy = 0; } }, {passive:true});
+  sh.addEventListener('touchmove', e => { if (y0 == null) return; dy = Math.max(0, e.touches[0].clientY - y0); if (dy > 0) { sh.style.transition = 'none'; sh.style.transform = `translate(-50%, ${dy}px)`; } }, {passive:true});
+  sh.addEventListener('touchend', () => { sh.style.transition = ''; sh.style.transform = ''; if (dy > 110) hideSheet(); y0 = null; });
+});
+
+// expense sheet
+let ed = null, curTouched = false;
+function phaseForDate(d) { const s = S(); return d >= s.depart && d <= s.ret ? 'trip' : 'home'; }
+function openExpense(id) {
+  const s = S(), e = id ? state.expenses.find(x => x.id === id) : null;
+  const d = e?.date || today(), ph = e?.phase || phaseForDate(d);
+  ed = e ? {...e} : {id:null, amount:'', cur: ph === 'trip' ? s.destCur : s.homeCur, cat:'food', phase:ph, date:d, note:''};
+  curTouched = !!e;
+  $('#expTitle').textContent = e ? 'Edit expense' : 'New expense';
+  $('#expSave').textContent = e ? 'Save changes' : 'Save expense';
+  $('#expDel').style.display = e ? '' : 'none';
+  $('#expAmt').value = e ? e.amount : '';
+  $('#expDate').value = ed.date; $('#expNote').value = ed.note || '';
+  const setPhase = seg($('#expPhase'), [{v:'home',t:phaseShort('home')},{v:'trip',t:phaseShort('trip')}], ed.phase, v => {
+    ed.phase = v; if (!curTouched) { ed.cur = v === 'trip' ? s.destCur : s.homeCur; setCur(ed.cur); } updConv(); });
+  const setCur = seg($('#expCur'), [{v:s.homeCur,t:`${flag(s.homeCur)} ${s.homeCur}`},{v:s.destCur,t:`${flag(s.destCur)} ${s.destCur}`}], ed.cur, v => { ed.cur = v; curTouched = true; updConv(); });
+  $('#expDate').onchange = () => { ed.date = $('#expDate').value || today(); if (!e) { ed.phase = phaseForDate(ed.date); setPhase(ed.phase); if (!curTouched) { ed.cur = ed.phase === 'trip' ? s.destCur : s.homeCur; setCur(ed.cur); } updConv(); } };
+  $('#expCats').innerHTML = CATS.map(k => `<button type="button" class="cat ${ed.cat === k.id ? 'on' : ''}" style="--c:${k.color}" data-cat="${k.id}"><span class="i">${k.icon}</span>${k.name}</button>`).join('');
+  updConv();
+  showSheet($('#expSheet'));
+  if (!e) setTimeout(() => $('#expAmt').focus(), 350);
+}
+function updConv() {
+  const s = S(), a = num($('#expAmt').value);
+  $('#expAmt').style.width = Math.max(1, $('#expAmt').value.length) + 1.4 + 'ch';
+  $('#expSym').textContent = sym(ed.cur);
+  $('#expConv').textContent = a ? '≈ ' + (ed.cur === s.homeCur ? fmt(a * s.rate, s.destCur) : fmt(a / s.rate, s.homeCur)) : '';
+}
+$('#expAmt').addEventListener('input', updConv);
+$('#expCats').onclick = e => { const b = e.target.closest('.cat'); if (!b) return; ed.cat = b.dataset.cat; $$('.cat', $('#expCats')).forEach(x => x.classList.toggle('on', x === b)); haptic(); };
+$('#expSave').onclick = () => {
+  const a = num($('#expAmt').value);
+  if (a <= 0) { toast('Enter an amount'); $('#expAmt').focus(); return; }
+  const rec = {id: ed.id || uid(), amount: Math.round(a * 100) / 100, cur: ed.cur, cat: ed.cat, phase: ed.phase,
+    date: $('#expDate').value || today(), note: $('#expNote').value.trim(), ts: ed.ts || Date.now()};
+  const i = state.expenses.findIndex(x => x.id === rec.id);
+  if (i >= 0) state.expenses[i] = rec; else state.expenses.push(rec);
+  save(); hideSheet(); haptic(); toast(i >= 0 ? 'Updated ✓' : `Added ${fmt(rec.amount, rec.cur)} ✓`); renderAll();
+};
+$('#expDel').onclick = () => {
+  if (!confirm('Delete this expense?')) return;
+  state.expenses = state.expenses.filter(x => x.id !== ed.id); save(); hideSheet(); toast('Deleted'); renderAll();
+};
+
+// bill sheet
+let bed = null;
+function openBill(id, name) {
+  const b = id ? state.bills.find(x => x.id === id) : null;
+  bed = b ? {...b} : {id:null};
+  $('#billTitle').textContent = b ? 'Edit bill' : 'Recurring bill';
+  $('#billName').value = b?.name || name || '';
+  $('#billAmt').value = b?.amount || '';
+  $('#billFreq').value = b?.freq || (name === 'Rent' ? 'weekly' : 'monthly');
+  $('#billDel').style.display = b ? '' : 'none';
+  showSheet($('#billSheet'));
+  setTimeout(() => (name ? $('#billAmt') : $('#billName')).focus(), 350);
+}
+$('#billSave').onclick = () => {
+  const name = $('#billName').value.trim(), amount = num($('#billAmt').value);
+  if (!name) { toast('Give the bill a name'); return; }
+  if (amount <= 0) { toast('Enter an amount'); return; }
+  const rec = {id: bed.id || uid(), name, amount, freq: $('#billFreq').value};
+  const i = state.bills.findIndex(x => x.id === rec.id);
+  if (i >= 0) state.bills[i] = rec; else state.bills.push(rec);
+  save(); hideSheet(); haptic(); toast('Bill saved ✓'); renderAll();
+};
+$('#billDel').onclick = () => { state.bills = state.bills.filter(x => x.id !== bed.id); save(); hideSheet(); toast('Bill removed'); renderAll(); };
+
+// ---------- events ----------
+document.addEventListener('click', e => {
+  const g = e.target.closest('[data-go]'); if (g) { go(g.dataset.go); return; }
+  const ex = e.target.closest('[data-edit]'); if (ex) { openExpense(ex.dataset.edit); return; }
+  const bl = e.target.closest('[data-bill]'); if (bl) { openBill(bl.dataset.bill); return; }
+  const sg = e.target.closest('[data-sug]'); if (sg) { openBill(null, sg.dataset.sug); return; }
+  const fp = e.target.closest('[data-fp]'); if (fp) { fPhase = fp.dataset.fp; renderList(); return; }
+  const fc = e.target.closest('[data-fc]'); if (fc) { fCat = fc.dataset.fc; renderList(); return; }
+});
+$('#fab').onclick = () => { haptic(); openExpense(null); };
+$('#addBill').onclick = () => openBill(null);
+$('#q').addEventListener('input', renderList);
+
+$$('[data-plan]').forEach(el => el.addEventListener('input', () => {
+  const k = el.dataset.plan;
+  state.plan[k] = num(el.value);
+  if (k === 'balance') state.plan.balanceDate = today();
+  save(); renderPlan(false);
+}));
+$$('[data-set]').forEach(el => el.addEventListener('change', () => {
+  const k = el.dataset.set, s = S();
+  if (k === 'rate') { const r = num(el.value); if (r > 0) { s.rate = r; s.rateUpdated = null; } }
+  else if (k === 'depart' || k === 'ret') {
+    if (!el.value) return renderSettings();
+    s[k] = el.value;
+    if (s.ret <= s.depart) { s.ret = addDays(s.depart, 1); toast('Return date moved after departure'); }
+  }
+  else if (k === 'homeCur' || k === 'destCur') { s[k] = el.value; save(); fetchRate(true); }
+  else s[k] = el.value.trim() || s[k];
+  save(); renderAll(); toast('Saved ✓');
+}));
+$('#rateBtn').onclick = () => fetchRate(false);
+
+// export / import
+function download(name, text, type) {
+  const blob = new Blob([text], {type});
+  const file = new File([blob], name, {type});
+  if (navigator.canShare && navigator.canShare({files:[file]})) { navigator.share({files:[file], title:name}).catch(() => {}); return; }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+function exportCSV() {
+  const s = S();
+  const rows = [['Date','Phase','Category','Note','Amount','Currency',`In ${s.homeCur}`,`In ${s.destCur}`]];
+  [...state.expenses].sort((a, b) => a.date.localeCompare(b.date)).forEach(e => rows.push([e.date, e.phase === 'home' ? s.homeName : s.destName,
+    CAT[e.cat]?.name || e.cat, e.note || '', e.amount, e.cur, toHome(e.amount, e.cur).toFixed(2), toDest(e.amount, e.cur).toFixed(2)]));
+  download(`expenses-${today()}.csv`, rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n'), 'text/csv');
+}
+$('#csvBtn').onclick = exportCSV; $('#csvBtn2').onclick = exportCSV;
+$('#exportBtn').onclick = () => download(`expense-manager-backup-${today()}.json`, JSON.stringify(state, null, 2), 'application/json');
+$('#importBtn').onclick = () => $('#importFile').click();
+$('#importFile').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try {
+    const d = JSON.parse(await f.text());
+    if (!d.settings || !Array.isArray(d.expenses)) throw 0;
+    if (!confirm('Replace all current data with this backup?')) return;
+    state = {...fresh(), ...d, settings:{...fresh().settings, ...d.settings, setupDone:true}, plan:{...fresh().plan, ...d.plan}};
+    save(); renderAll(); toast('Backup restored ✓');
+  } catch { toast('That file is not a valid backup'); }
+  e.target.value = '';
+};
+$('#resetBtn').onclick = () => {
+  if (!confirm('Erase all expenses, bills and settings on this device? This cannot be undone.')) return;
+  state = fresh(); save(); location.reload();
+};
+
+// ---------- wizard ----------
+function runWizard() {
+  const w = $('#wizard'); w.hidden = false;
+  $('#wHomeCur').value = 'AUD'; $('#wDestCur').value = 'INR';
+  $('#wDepart').value = S().depart; $('#wRet').value = S().ret;
+  let step = 0;
+  const show = n => { step = n; $$('.wstep', w).forEach(x => x.classList.toggle('on', +x.dataset.step === n)); $$('.steps i', w).forEach((x, i) => x.classList.toggle('on', i <= n)); };
+  const dur = () => { const d = diffDays($('#wDepart').value || today(), $('#wRet').value || today()); $('#wDur').textContent = d > 0 ? `${d} days · about ${(d / 30.44).toFixed(1)} months` : 'Return date must be after departure'; };
+  $('#wDepart').onchange = dur; $('#wRet').onchange = dur; dur();
+  $$('[data-next]', w).forEach(b => b.onclick = () => show(step + 1));
+  $('#wFinish').onclick = () => {
+    const dep = $('#wDepart').value, ret = $('#wRet').value;
+    if (!dep || !ret || ret <= dep) { toast('Check your dates'); return; }
+    Object.assign(S(), {name:$('#wName').value.trim(), homeName:$('#wHome').value.trim() || 'Home', homeCur:$('#wHomeCur').value,
+      destName:$('#wDest').value.trim() || 'Trip', destCur:$('#wDestCur').value, depart:dep, ret, setupDone:true});
+    if (S().homeCur === 'AUD' && S().destCur === 'INR') S().rate = 56; else S().rate = 1;
+    save(); w.style.transition = 'opacity .4s, transform .4s'; w.style.opacity = 0; w.style.transform = 'scale(1.04)';
+    setTimeout(() => { w.hidden = true; }, 400);
+    renderAll(); fetchRate(true); toast('All set! Tap + to add an expense');
+  };
+}
+
+// ---------- boot ----------
+fillCurSelects();
+if (!S().setupDone) runWizard();
+else if (!S().rateUpdated || Date.now() - S().rateUpdated > 12 * 3600e3) { /* keep manual rate unless user asks */ }
+renderAll();
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
+})();
+</script>
+</body>
+</html>
