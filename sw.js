@@ -1,5 +1,5 @@
 // Offline support: cache the app shell, serve it when there is no network.
-const CACHE = 'expense-manager-v1';
+const CACHE = 'expense-manager-v2';
 const ASSETS = ['./', './index.html', './manifest.json', './icons/icon-180.png', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', e => {

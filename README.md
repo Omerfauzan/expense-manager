@@ -31,6 +31,8 @@ On Android, open the link in Chrome and tap **⋮ → Add to Home screen** (or *
 - **Quick add**: a big amount pad, 12 categories, and live conversion between currencies
 - **Charts**: a donut chart by category, the last 14 days, and budget progress bars
 - **Money plan**: enter your balance, income, and the bills that keep running while you're away (rent, phone, loans). It tells you **how much to keep in your account** and how much is **free to take on the trip**
+- **Savings & earning goals**: set a goal (or let it cover your whole trip automatically). It turns what's left into **hours and shifts to work** at your hourly rate after tax, and **hours per week** until you fly. Great for casual and shift workers
+- **Shift log**: book upcoming shifts and log worked ones. A weekly chart shows your hours against the target line, and earnings feed straight into your money plan
 - **Live exchange rate**: one tap fetches today's rate, or you can enter your own
 - **Any trip**: pick from 26 currencies and any countries, not just Australia → India
 - **Private**: all data stays on your phone. No account, no server

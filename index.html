@@ -237,6 +237,35 @@ button{cursor:pointer;border:0;background:none}
 .list-plain li{margin:4px 0}
 .list-plain b{color:var(--text)}
 .sec-title{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:22px 6px 8px}
+/* Goals */
+.goal-hero{background:linear-gradient(140deg,#f97316 0%,#ec4899 50%,#8b5cf6 100%)}
+.ring-wrap{position:relative;width:176px;height:176px;margin:10px auto 12px}
+.ring-wrap svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring-wrap circle{fill:none;stroke-width:15;transition:stroke-dasharray 1.4s cubic-bezier(.2,.8,.2,1),stroke-dashoffset 1.4s cubic-bezier(.2,.8,.2,1)}
+.ring-wrap .donut-center .v{font-size:38px}
+.ring-wrap .donut-center .k{color:rgba(255,255,255,.85);font-size:13px}
+.ring-legend{display:flex;justify-content:center;gap:16px;font-size:12px;opacity:.9;margin-top:12px}
+.ring-legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.stats.three{grid-template-columns:repeat(3,1fr);gap:10px}
+.stats.three .stat{padding:12px}
+.stats.three .v{font-size:19px}
+.kv{display:flex;justify-content:space-between;gap:10px;padding:9px 2px;border-bottom:1px solid var(--faint);font-size:14px}
+.kv:last-child{border-bottom:0}
+.kv b{font-variant-numeric:tabular-nums}
+.kv.total{font-weight:750;border-top:1px solid var(--faint);border-bottom:0;margin-top:2px}
+.kv.minus span:first-child{color:var(--muted)}
+.weeks{position:relative;display:flex;align-items:flex-end;gap:6px;height:150px;margin-top:8px}
+.wk{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;height:100%}
+.wk .col{flex:1;width:100%;display:flex;flex-direction:column;justify-content:flex-end;border-radius:7px;overflow:hidden;background:var(--faint)}
+.wk .col i{display:block;width:100%;height:0;transition:height 1.1s cubic-bezier(.2,.8,.2,1)}
+.wk .col i.dn{background:linear-gradient(180deg,#34d399,#10b981)}
+.wk .col i.pl{background:repeating-linear-gradient(45deg,color-mix(in srgb,var(--accent2) 70%,transparent) 0 5px,color-mix(in srgb,var(--accent2) 35%,transparent) 5px 10px)}
+.wk span{font-size:10px;color:var(--muted);height:13px}
+.wk.now span{color:var(--text);font-weight:700}
+.tline{position:absolute;left:0;right:0;border-top:2px dashed var(--warn);z-index:2;pointer-events:none;transition:bottom 1s}
+.tline span{position:absolute;right:0;top:-20px;font-size:11px;font-weight:700;color:var(--warn);background:var(--bg2);padding:1px 6px;border-radius:6px}
+.mini-legend{display:flex;gap:14px;font-size:12px;color:var(--muted);margin-top:10px}
+.mini-legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
 @media (prefers-reduced-motion: reduce){*{animation:none !important;transition:none !important}}
 </style>
 </head>
@@ -265,7 +294,8 @@ button{cursor:pointer;border:0;background:none}
 
   <!-- PLAN -->
   <section class="view" id="v-plan">
-    <header class="top"><div><div class="hello">Before you fly</div><h1>Money plan</h1></div></header>
+    <header class="top"><div><div class="hello">Before you fly</div><h1>Money plan</h1></div>
+      <button class="icon-btn" data-go="settings" aria-label="Settings">⚙️</button></header>
     <div id="planResult"></div>
     <div class="card">
       <div class="card-h"><h2>Your money now</h2></div>
@@ -273,7 +303,7 @@ button{cursor:pointer;border:0;background:none}
         <div class="inp-pre"><span class="hc"></span><input class="inp" inputmode="decimal" data-plan="balance" placeholder="0"></div>
         <div class="hint" id="balHint">Update it any time. Expenses you log after this date are taken off automatically.</div></div>
       <div class="row2">
-        <div class="field"><label>Income before leaving</label>
+        <div class="field"><label>Other income before leaving</label>
           <div class="inp-pre"><span class="hc"></span><input class="inp" inputmode="decimal" data-plan="incomeBefore" placeholder="0"></div></div>
         <div class="field"><label>Income while away</label>
           <div class="inp-pre"><span class="hc"></span><input class="inp" inputmode="decimal" data-plan="incomeAway" placeholder="0"></div></div>
@@ -295,6 +325,29 @@ button{cursor:pointer;border:0;background:none}
       <div class="chips" id="billSuggest" style="margin-top:10px"></div>
       <div class="field" style="margin:14px 0 0"><label>Safety buffer: <span id="bufVal">10</span>%</label>
         <input type="range" class="range" min="0" max="50" step="5" data-plan="buffer"></div>
+    </div>
+  </section>
+
+  <!-- GOALS -->
+  <section class="view" id="v-goals">
+    <header class="top"><div><div class="hello">Work &amp; save</div><h1>Goals</h1></div>
+      <button class="icon-btn" data-go="settings" aria-label="Settings">⚙️</button></header>
+    <div class="stagger" id="goalsBody"></div>
+    <div class="card">
+      <div class="card-h"><h2>Goal settings</h2></div>
+      <div class="seg full" id="goalMode" style="margin-bottom:14px"></div>
+      <div class="field" id="customWrap"><label>Savings goal to reach before you fly</label>
+        <div class="inp-pre"><span class="hc"></span><input class="inp" inputmode="decimal" data-goal="custom" placeholder="0"></div></div>
+      <div class="field" id="extraWrap"><label>Extra savings on top</label>
+        <div class="inp-pre"><span class="hc"></span><input class="inp" inputmode="decimal" data-goal="extra" placeholder="0"></div>
+        <div class="hint">Money you want left over when you come back. The goal already covers your bills, pre-trip spending and trip budget.</div></div>
+      <div class="row2">
+        <div class="field"><label>Hourly rate</label>
+          <div class="inp-pre"><span class="hc"></span><input class="inp" inputmode="decimal" data-goal="rate" placeholder="30"></div></div>
+        <div class="field"><label>Tax withheld %</label><input class="inp" inputmode="decimal" data-goal="tax" placeholder="15"></div>
+      </div>
+      <div class="field"><label>Usual shift length (hours)</label><input class="inp" inputmode="decimal" data-goal="shiftLen" placeholder="6">
+        <div class="hint" id="netHint"></div></div>
     </div>
   </section>
 
@@ -350,8 +403,8 @@ button{cursor:pointer;border:0;background:none}
   <button data-go="home" class="on"><span class="i">🏠</span>Home</button>
   <button data-go="list"><span class="i">🧾</span>Expenses</button>
   <button class="fab" id="fab" aria-label="Add expense">+</button>
+  <button data-go="goals"><span class="i">🎯</span>Goals</button>
   <button data-go="plan"><span class="i">🧮</span>Plan</button>
-  <button data-go="settings"><span class="i">⚙️</span>Settings</button>
 </nav>
 
 <div class="backdrop" id="backdrop"></div>
@@ -386,6 +439,25 @@ button{cursor:pointer;border:0;background:none}
   </div>
   <button class="btn" id="billSave">Save bill</button>
   <button class="btn danger" id="billDel" style="margin-top:10px;display:none">Delete</button>
+</div>
+
+<!-- Shift sheet -->
+<div class="sheet" id="shiftSheet" role="dialog" aria-modal="true">
+  <div class="grab"></div>
+  <h3><span id="shiftTitle">Add shift</span><button class="icon-btn" data-close aria-label="Close">✕</button></h3>
+  <div class="seg full" id="shiftStatus" style="margin-bottom:16px"></div>
+  <div class="row2">
+    <div class="field"><label>Date</label><input type="date" class="inp" id="shiftDate"></div>
+    <div class="field"><label>Hours</label><input class="inp" id="shiftHours" inputmode="decimal" placeholder="6"></div>
+  </div>
+  <div class="chips" id="hrsChips" style="margin:-4px 0 12px"></div>
+  <div class="row2">
+    <div class="field"><label>Hourly rate</label><div class="inp-pre"><span class="hc"></span><input class="inp" id="shiftRate" inputmode="decimal"></div></div>
+    <div class="field"><label>Workplace</label><input class="inp" id="shiftNote" placeholder="Optional" maxlength="40"></div>
+  </div>
+  <div class="conv" id="shiftPay" style="margin:0 0 14px"></div>
+  <button class="btn" id="shiftSave">Save shift</button>
+  <button class="btn danger" id="shiftDel" style="margin-top:10px;display:none">Delete</button>
 </div>
 
 <!-- First-run wizard -->
@@ -464,14 +536,16 @@ const fresh = () => ({
   settings:{name:'',homeName:'Australia',homeCur:'AUD',destName:'India',destCur:'INR',rate:56,rateUpdated:null,
     depart:addDays(today(),21),ret:addDays(today(),81),setupDone:false},
   plan:{balance:0,balanceDate:today(),incomeBefore:0,incomeAway:0,budgetHome:0,budgetTrip:0,buffer:10},
-  bills:[], expenses:[],
+  bills:[], expenses:[], shifts:[],
+  goal:{mode:'auto',custom:0,extra:0,rate:30,tax:15,shiftLen:6},
 });
 let state;
 try { state = JSON.parse(localStorage.getItem(KEY)) || fresh(); } catch { state = fresh(); }
 const base = fresh();
 state.settings = {...base.settings, ...state.settings};
 state.plan = {...base.plan, ...state.plan};
-state.bills ||= []; state.expenses ||= [];
+state.goal = {...base.goal, ...state.goal};
+state.bills ||= []; state.expenses ||= []; state.shifts ||= [];
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {} };
 const S = () => state.settings;
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -519,13 +593,33 @@ function calc() {
   const keep = Math.max(0, billsAway + bufferAmt - p.incomeAway);
   const remainingHome = Math.max(0, p.budgetHome - homeSpent);
   const effBalance = p.balance - spentSinceBal;
-  const available = effBalance + p.incomeBefore - remainingHome - keep;
+  // shifts & savings goal
+  const g = state.goal, taxK = 1 - Math.min(90, Math.max(0, g.tax)) / 100;
+  const netRate = Math.max(0.01, g.rate * taxK);
+  const net = x => x.hours * x.rate * taxK;
+  const doneSh = state.shifts.filter(x => x.status === 'done');
+  const planSh = state.shifts.filter(x => x.status === 'planned' && x.date >= t && x.date < s.depart);
+  const earnedSince = sum(doneSh.filter(x => x.date > p.balanceDate).map(net));
+  const earnedTotal = sum(doneSh.map(net)), hoursDone = sum(doneSh.map(x => x.hours));
+  const plannedNet = sum(planSh.map(net)), hoursPlanned = sum(planSh.map(x => x.hours));
+  const tripBudgetHome = p.budgetTrip / (s.rate || 1);
+  const autoTarget = remainingHome + keep + tripBudgetHome + g.extra;
+  const target = g.mode === 'custom' ? g.custom : autoTarget;
+  const current = effBalance + earnedSince;
+  const gap = Math.max(0, target - current - p.incomeBefore);
+  const hoursNeeded = gap / netRate;
+  const stillUnplanned = Math.max(0, gap - plannedNet), hoursUnplanned = stillUnplanned / netRate;
+  const weeksLeft = Math.max(1, untilDepart) / 7;
+  const hrsPerWeek = hoursNeeded / weeksLeft;
+  const available = current + p.incomeBefore + plannedNet - remainingHome - keep;
   const availableDest = available * s.rate;
   const tripLeft = p.budgetTrip - tripSpent;
   const daysLeft = status === 'during' ? tripDays - dayOfTrip + 1 : tripDays;
   const daily = p.budgetTrip ? Math.max(0, tripLeft) / Math.max(1, status === 'after' ? 1 : daysLeft) : 0;
   return {tripDays, untilDepart, status, dayOfTrip, homeSpent, tripSpent, billsAway, bufferAmt, keep, remainingHome,
-    effBalance, spentSinceBal, available, availableDest, tripLeft, daysLeft, daily, homeExp, tripExp};
+    effBalance, spentSinceBal, available, availableDest, tripLeft, daysLeft, daily, homeExp, tripExp,
+    netRate, net, earnedSince, earnedTotal, hoursDone, plannedNet, hoursPlanned, tripBudgetHome, autoTarget, target,
+    current, gap, hoursNeeded, stillUnplanned, hoursUnplanned, weeksLeft, hrsPerWeek};
 }
 
 // ---------- animation helpers ----------
@@ -665,8 +759,17 @@ function renderHome() {
   const rec = `<div class="card"><div class="card-h"><h2>Recent</h2>${recent.length ? '<button class="sub" data-go="list">See all →</button>' : ''}</div>
     ${recent.length ? recent.map(expRow).join('') : '<div class="empty"><span class="e">🧾</span>Your latest expenses will show here.</div>'}</div>`;
 
+  // savings goal mini card
+  const gs = goalStatus(c), gp = c.target > 0 ? Math.min(1, Math.max(0, c.current / c.target)) : 0;
+  const goalCard = `<button class="card" data-go="goals" style="display:block;width:100%;text-align:left;color:inherit">
+    <div class="card-h" style="margin-bottom:6px"><h2>🎯 Savings goal</h2><span class="pill ${gs.cls}">${Math.round(gp * 100)}%</span></div>
+    <div class="prog" style="margin:0"><div class="t"><b>${fmt(Math.max(0, c.current), s.homeCur, {whole:true})}</b><span class="sub">of ${fmt(c.target, s.homeCur, {whole:true})}</span></div>
+      <div class="track"><i style="background:linear-gradient(90deg,#f97316,#ec4899,#8b5cf6)" data-w="${gp * 100}%"></i></div></div>
+    <div class="sub" style="margin-top:8px">${gs.t}${c.gap > 0 && c.status === 'before' ? ` · ${Math.ceil(c.hoursNeeded)} h to go` : ''}</div>
+  </button>`;
+
   const body = $('#homeBody');
-  body.innerHTML = hero + stats + donut + bars + budgets + rec;
+  body.innerHTML = hero + stats + goalCard + donut + bars + budgets + rec;
   seg($('#homeSeg'), [{v:'all',t:'All'},{v:'home',t:flag(s.homeCur)},{v:'trip',t:flag(s.destCur)}], homeSeg, v => { homeSeg = v; renderHome(); });
   animateIn(body);
 }
@@ -739,7 +842,9 @@ function waterfall(c) {
   const s = S(), p = state.plan;
   const rows = [
     ['Balance now', c.effBalance, 'var(--accent2)'],
-    ['+ Income before', p.incomeBefore, 'var(--accent2)'],
+    ['+ Shifts worked', c.earnedSince, 'var(--good)'],
+    ['+ Shifts booked', c.plannedNet, 'var(--accent2)'],
+    ['+ Other income', p.incomeBefore, 'var(--accent2)'],
     ['− Pre-trip spend', -c.remainingHome, 'var(--home)'],
     ['− Bills away', -c.billsAway, '#94a3b8'],
     ['− Buffer', -c.bufferAmt, '#cbd5e1'],
@@ -761,6 +866,154 @@ function renderBills(c) {
   const have = new Set(state.bills.map(b => b.name.toLowerCase()));
   $('#billSuggest').innerHTML = BILL_SUGGEST.filter(n => !have.has(n.toLowerCase())).map(n => `<button class="chip" data-sug="${n}">+ ${n}</button>`).join('');
 }
+
+// ---------- GOALS ----------
+const hrs = h => (h > 0 && h < 10 ? Math.round(h * 10) / 10 : Math.round(h)) + ' h';
+function goalStatus(c) {
+  const s = S();
+  if (c.status !== 'before') return {t: c.status === 'during' ? `You're on your trip: savings window closed` : 'Trip finished: set a new goal any time', cls: ''};
+  if (c.target <= 0) return {t: 'Set a trip budget in Plan, or choose a custom goal', cls: 'warn'};
+  if (c.gap <= 0) return {t: '🎉 Goal reached! You have enough', cls: 'good'};
+  if (c.stillUnplanned <= 0) return {t: '✅ Your planned shifts cover the rest', cls: 'good'};
+  return {t: `Work about ${hrs(c.hrsPerWeek)} a week until ${fmtDate(s.depart)}`, cls: 'warn'};
+}
+const mondayOf = d => { const x = parse(d); x.setDate(x.getDate() - (x.getDay() + 6) % 7); return iso(x); };
+
+function renderGoals(full = true) {
+  const s = S(), g = state.goal, p = state.plan, c = calc(), hc = s.homeCur, len = Math.max(0.5, g.shiftLen || 6);
+  if (full) {
+    $$('[data-goal]').forEach(el => { if (document.activeElement !== el) el.value = g[el.dataset.goal] || ''; });
+    seg($('#goalMode'), [{v:'auto', t:'🧳 Cover my trip'}, {v:'custom', t:'🎯 Custom amount'}], g.mode, v => { g.mode = v; save(); renderGoals(); });
+  }
+  $('#customWrap').style.display = g.mode === 'custom' ? '' : 'none';
+  $('#extraWrap').style.display = g.mode === 'auto' ? '' : 'none';
+  $('#netHint').textContent = `You take home about ${fmt(c.netRate, hc)} an hour after tax (${fmt(c.netRate * len, hc)} a shift).`;
+
+  const st = goalStatus(c);
+  const R = 74, C = 2 * Math.PI * R;
+  const pct = c.target > 0 ? Math.min(1, Math.max(0, c.current / c.target)) : 0;
+  const ppct = c.target > 0 ? Math.max(0, Math.min(1 - pct, (c.plannedNet + p.incomeBefore) / c.target)) : 0;
+  const hero = `<div class="card hero goal-hero">
+    <div class="label">${g.mode === 'auto' ? 'Goal: cover your whole trip' : 'Your savings goal'} · by ${fmtDate(s.depart)}</div>
+    <div class="ring-wrap"><svg viewBox="0 0 180 180">
+      <circle cx="90" cy="90" r="${R}" stroke="rgba(255,255,255,.18)"></circle>
+      <circle cx="90" cy="90" r="${R}" stroke="rgba(255,255,255,.5)" style="stroke-dasharray:0 ${C}" data-dash="${ppct * C} ${C}" data-off="${-pct * C}"></circle>
+      <circle cx="90" cy="90" r="${R}" stroke="#fff" style="stroke-dasharray:0 ${C}" data-dash="${pct * C} ${C}" data-off="0"></circle></svg>
+      <div class="donut-center"><div class="v"><span data-count="${Math.round(pct * 100)}|n">0</span>%</div><div class="k">saved</div></div></div>
+    <div style="text-align:center;font-size:16px"><b data-count="${Math.max(0, c.current)}|${hc}">0</b> of <b>${fmt(c.target, hc, {whole:true})}</b></div>
+    <div style="text-align:center;font-size:13.5px;opacity:.92;margin-top:4px">${st.t}</div>
+    <div class="ring-legend"><span><i style="background:#fff"></i>Saved</span><span><i style="background:rgba(255,255,255,.5)"></i>Planned shifts + income</span></div>
+  </div>`;
+
+  const kpis = `<div class="stats three">
+    <div class="card stat"><div class="k">💵 To earn</div><div class="v" data-count="${c.gap}|${hc}">0</div><div class="s">after tax</div></div>
+    <div class="card stat"><div class="k">⏱ Hours</div><div class="v"><span data-count="${Math.ceil(c.hoursNeeded)}|n">0</span> h</div><div class="s">at ${fmt(g.rate, hc)}/h</div></div>
+    <div class="card stat"><div class="k">📅 Shifts</div><div class="v" data-count="${Math.ceil(c.hoursNeeded / len)}|n">0</div><div class="s">of ${len} h</div></div>
+  </div>`;
+
+  // weekly hours chart
+  const w0 = mondayOf(today());
+  const futureWeeks = Math.ceil(diffDays(w0, s.depart) / 7);
+  const last = Math.max(0, Math.min(6, futureWeeks - 1));
+  const weeks = [];
+  for (let i = -3; i <= last; i++) {
+    const ws = addDays(w0, 7 * i), we = addDays(ws, 7);
+    const inW = x => x.date >= ws && x.date < we;
+    weeks.push({i, ws, done: sum(state.shifts.filter(x => x.status === 'done' && inW(x)).map(x => x.hours)),
+      plan: sum(state.shifts.filter(x => x.status === 'planned' && inW(x)).map(x => x.hours))});
+  }
+  const need = c.status === 'before' && c.gap > 0 ? c.hrsPerWeek : 0;
+  const max = Math.max(1, need, ...weeks.map(w => w.done + w.plan)) * 1.15;
+  const chart = `<div class="card"><div class="card-h"><h2>Your shift plan</h2><button class="btn sm" data-addshift>+ Shift</button></div>
+    <div class="kv"><span>Weeks until you fly</span><b>${c.status === 'before' ? (c.untilDepart / 7).toFixed(1) : '0'}</b></div>
+    <div class="kv"><span>Needed per week</span><b>${need ? `${hrs(need)} · ${(need / len).toFixed(1)} shifts` : '-'}</b></div>
+    <div class="kv"><span>Already booked</span><b>${hrs(c.hoursPlanned)} · ${fmt(c.plannedNet, hc, {whole:true})}</b></div>
+    <div class="kv"><span>Still to book</span><b style="color:${c.hoursUnplanned > 0 ? 'var(--warn)' : 'var(--good)'}">${c.hoursUnplanned > 0 ? `${hrs(c.hoursUnplanned)} · ${Math.ceil(c.hoursUnplanned / len)} shifts` : 'Nothing 🎉'}</b></div>
+    <div class="weeks">
+      ${need ? `<div class="tline" style="bottom:calc(18px + (100% - 18px) * ${need / max})"><span>need ${hrs(need)}/wk</span></div>` : ''}
+      ${weeks.map(w => `<div class="wk ${w.i === 0 ? 'now' : ''}" title="Week of ${fmtDate(w.ws)}: ${w.done} h worked, ${w.plan} h planned">
+        <div class="col"><i class="pl" data-h="${w.plan / max * 100}%"></i><i class="dn" data-h="${w.done / max * 100}%"></i></div>
+        <span>${w.i === 0 ? 'Now' : parse(w.ws).getDate() + '/' + (parse(w.ws).getMonth() + 1)}</span></div>`).join('')}
+    </div>
+    <div class="mini-legend"><span><i style="background:#10b981"></i>Worked</span><span><i style="background:var(--accent2)"></i>Planned</span><span>Weeks start Monday</span></div>
+  </div>`;
+
+  // how the goal is worked out
+  const row = (l, v, cls = '') => `<div class="kv ${cls}"><span>${l}</span><b>${fmt(v, hc, {whole:true})}</b></div>`;
+  const breakdown = `<div class="card"><div class="card-h"><h2>How it's worked out</h2><span class="sub">${hc}</span></div>
+    ${g.mode === 'auto' ? row('Pre-trip spending left', c.remainingHome) + row(`Bills while away + ${p.buffer}% buffer`, c.keep) +
+      row(`${s.destName} budget (${fmt(p.budgetTrip, s.destCur, {whole:true})})`, c.tripBudgetHome) + (g.extra ? row('Extra savings', g.extra) : '') : ''}
+    ${row('= Savings goal', c.target, 'total')}
+    ${row('− Bank balance now', -c.effBalance, 'minus')}
+    ${c.earnedSince ? row('− Shifts worked since', -c.earnedSince, 'minus') : ''}
+    ${p.incomeBefore ? row('− Other income expected', -p.incomeBefore, 'minus') : ''}
+    ${row('= Still to earn from shifts', c.gap, 'total')}
+    ${g.mode === 'auto' && !p.budgetTrip ? '<div class="sub" style="margin-top:8px">💡 Add your trip budget and bills in <b>Plan</b> so the goal covers everything.</div>' : ''}
+  </div>`;
+
+  // shift list
+  const upcoming = state.shifts.filter(x => x.status === 'planned').sort((a, b) => a.date.localeCompare(b.date));
+  const worked = state.shifts.filter(x => x.status === 'done').sort((a, b) => b.date.localeCompare(a.date));
+  const list = `<div class="card"><div class="card-h"><div><h2>Shifts</h2><div class="sub">${hrs(c.hoursDone)} worked · ${fmt(c.earnedTotal, hc, {whole:true})} earned</div></div>
+      <button class="btn sm" data-addshift>+ Shift</button></div>
+    ${!state.shifts.length ? `<div class="empty"><span class="e">🕒</span>Log the shifts you work, and book upcoming ones to see if you'll hit your goal.</div>` : ''}
+    ${upcoming.length ? `<div class="day-h" style="margin-top:4px"><span>Upcoming</span><span>${hrs(sum(upcoming.map(x => x.hours)))}</span></div>` + upcoming.map(x => shiftRow(x, c)).join('') : ''}
+    ${worked.length ? `<div class="day-h"><span>Worked</span><span>${fmt(c.earnedTotal, hc, {whole:true})}</span></div>` + worked.slice(0, 25).map(x => shiftRow(x, c)).join('') : ''}
+  </div>`;
+
+  const body = $('#goalsBody');
+  body.innerHTML = hero + kpis + chart + breakdown + list;
+  animateIn(body);
+}
+function shiftRow(x, c) {
+  const hc = S().homeCur, overdue = x.status === 'planned' && x.date < today(), done = x.status === 'done';
+  return `<button class="exp" data-shift="${x.id}"><span class="ic" style="background:color-mix(in srgb,${done ? 'var(--good)' : overdue ? 'var(--warn)' : 'var(--accent2)'} 20%,transparent)">${done ? '✅' : overdue ? '⏰' : '🗓️'}</span>
+    <div class="mid"><div class="n">${esc(x.note || 'Shift')}</div><div class="m">${fmtDate(x.date, {weekday:'short', day:'numeric', month:'short'})} · ${x.hours} h × ${fmt(x.rate, hc)}${overdue ? ' · tap to confirm' : ''}</div></div>
+    <div class="amt">${fmt(c.net(x), hc)}<small>${done ? 'take-home' : 'planned'}</small></div></button>`;
+}
+
+// shift sheet
+let sed = null, setShiftStatus = null;
+function openShift(id) {
+  const g = state.goal, x = id ? state.shifts.find(v => v.id === id) : null;
+  const lastNote = [...state.shifts].sort((a, b) => (b.ts || 0) - (a.ts || 0))[0]?.note || '';
+  sed = x ? {...x} : {id:null, date:today(), hours:g.shiftLen || 6, rate:g.rate, note:lastNote, status:'done'};
+  $('#shiftTitle').textContent = x ? 'Edit shift' : 'Add shift';
+  $('#shiftSave').textContent = x ? 'Save changes' : 'Save shift';
+  $('#shiftDel').style.display = x ? '' : 'none';
+  $('#shiftDate').value = sed.date; $('#shiftHours').value = sed.hours; $('#shiftRate').value = sed.rate; $('#shiftNote').value = sed.note || '';
+  setShiftStatus = seg($('#shiftStatus'), [{v:'planned', t:'🗓️ Planned'}, {v:'done', t:'✅ Worked'}], sed.status, v => { sed.status = v; });
+  $('#hrsChips').innerHTML = [3, 4, 5, 6, 8, 10].map(h => `<button type="button" class="chip" data-hr="${h}">${h} h</button>`).join('');
+  updPay();
+  showSheet($('#shiftSheet'));
+}
+function updPay() {
+  const h = num($('#shiftHours').value), r = num($('#shiftRate').value), hc = S().homeCur, k = 1 - state.goal.tax / 100;
+  $('#shiftPay').textContent = h && r ? `${fmt(h * r, hc)} before tax · ≈ ${fmt(h * r * k, hc)} take-home` : '';
+}
+$('#shiftDate').addEventListener('change', () => {
+  const d = $('#shiftDate').value; if (!d) return;
+  sed.status = d > today() ? 'planned' : 'done'; setShiftStatus(sed.status);
+});
+$('#shiftHours').addEventListener('input', updPay);
+$('#shiftRate').addEventListener('input', updPay);
+$('#hrsChips').addEventListener('click', e => { const b = e.target.closest('[data-hr]'); if (!b) return; $('#shiftHours').value = b.dataset.hr; updPay(); haptic(); });
+$('#shiftSave').onclick = () => {
+  const hours = num($('#shiftHours').value), rate = num($('#shiftRate').value);
+  if (hours <= 0 || hours > 24) { toast('Enter hours between 0 and 24'); return; }
+  if (rate <= 0) { toast('Enter your hourly rate'); return; }
+  const rec = {id: sed.id || uid(), date: $('#shiftDate').value || today(), hours, rate, note: $('#shiftNote').value.trim(), status: sed.status, ts: sed.ts || Date.now()};
+  const i = state.shifts.findIndex(v => v.id === rec.id);
+  if (i >= 0) state.shifts[i] = rec; else state.shifts.push(rec);
+  save(); hideSheet(); haptic(); toast(rec.status === 'done' ? `Logged ${rec.hours} h ✓` : `Booked ${rec.hours} h shift ✓`); renderAll();
+};
+$('#shiftDel').onclick = () => {
+  if (!confirm('Delete this shift?')) return;
+  state.shifts = state.shifts.filter(v => v.id !== sed.id); save(); hideSheet(); toast('Shift deleted'); renderAll();
+};
+$$('[data-goal]').forEach(el => el.addEventListener('input', () => {
+  state.goal[el.dataset.goal] = num(el.value); save(); renderGoals(false);
+}));
 
 // ---------- SETTINGS ----------
 function fillCurSelects() {
@@ -804,6 +1057,7 @@ function renderView() {
   if (view === 'home') renderHome();
   if (view === 'list') renderList();
   if (view === 'plan') renderPlan();
+  if (view === 'goals') renderGoals();
   if (view === 'settings') renderSettings();
 }
 const renderAll = renderView;
@@ -895,6 +1149,8 @@ document.addEventListener('click', e => {
   const g = e.target.closest('[data-go]'); if (g) { go(g.dataset.go); return; }
   const ex = e.target.closest('[data-edit]'); if (ex) { openExpense(ex.dataset.edit); return; }
   const bl = e.target.closest('[data-bill]'); if (bl) { openBill(bl.dataset.bill); return; }
+  const sh = e.target.closest('[data-shift]'); if (sh) { openShift(sh.dataset.shift); return; }
+  if (e.target.closest('[data-addshift]')) { openShift(null); return; }
   const sg = e.target.closest('[data-sug]'); if (sg) { openBill(null, sg.dataset.sug); return; }
   const fp = e.target.closest('[data-fp]'); if (fp) { fPhase = fp.dataset.fp; renderList(); return; }
   const fc = e.target.closest('[data-fc]'); if (fc) { fCat = fc.dataset.fc; renderList(); return; }
